@@ -1,0 +1,10 @@
+{
+    "psi-header.config": {
+        "psi-header.variables": [
+        ["projectCreationYear", "2022"],
+        ["url", "https://github.com/john-james-ai/LungCancerDetection"],
+        ["projectname", "Lung Cancer Detection"],
+        ["version", "0.1.0"]
+        ]
+    }
+}
