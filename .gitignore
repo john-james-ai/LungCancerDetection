@@ -9,6 +9,9 @@ __pycache__/
 # Data
 data/
 
+# Lab
+lab/
+
 # Distribution / packaging
 .Python
 build/
