@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Friday July 29th 2022 12:41:04 am                                                   #
-# Modified   : Friday July 29th 2022 06:38:57 pm                                                   #
+# Modified   : Sunday July 31st 2022 12:56:51 am                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -23,7 +23,7 @@ PYLIDC_CONFIG = "config/pylidc.conf"
 
 
 class DataConfig:
-    def __init__(self, config_filepath: str = DATA_CONFIG):
+    def __init__(self, config_filepath=DATA_CONFIG):
         self._config_filepath = config_filepath
         self._parser = configparser.ConfigParser()
         self._parser.read(config_filepath)
@@ -41,12 +41,12 @@ class DataConfig:
         return self._parser["folders"]["masks"]
 
     @property
-    def metadata_folder(self) -> str:
-        return self._parser["folders"]["metadata"]
+    def lidc_folder(self) -> str:
+        return self._parser["folders"]["lidc"]
 
 
 class PylidcConfig:
-    def __init__(self, config_filepath: str = PYLIDC_CONFIG):
+    def __init__(self, config_filepath=PYLIDC_CONFIG):
         self._config_filepath = config_filepath
         self._parser = configparser.ConfigParser()
         self._parser.read(config_filepath)
