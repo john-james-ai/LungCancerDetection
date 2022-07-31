@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Wednesday July 27th 2022 03:49:40 pm                                                #
-# Modified   : Sunday July 31st 2022 04:55:18 am                                                   #
+# Modified   : Sunday July 31st 2022 11:03:38 am                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -71,6 +71,7 @@ class LIDCExplorer:
             "texture",
         ]
         levels = range(1, 7)
+
         for biomarker, level in zip(biomarkers, levels):
             self._nodule_data[biomarker].groupby(biomarker).count()
 
@@ -86,8 +87,8 @@ class LIDCExplorer:
 
         summary_data = np.zeros((n_readers, n_malignancy_values + 1))
         for i in range(n_readers):
+            summary_data[i, 0] = i + 1
             for j in range(1, n_malignancy_values + 1):  # +1 For n_readers column
-                summary_data[i, 0] = i + 1
                 summary_data[i, j] = len(
                     self._nodule_data[
                         (self._nodule_data["n_readers"] > i)
@@ -130,9 +131,7 @@ class LIDCExplorer:
 
     def diameter_plot_by_diagnosis(self) -> None:
         fig, axes = plt.subplots(figsize=(12, 8))
-        axes = sns.boxplot(
-            x=self._annotation_data["diagnosis"], y=self._annotation_data["diameter"]
-        )
+        axes = sns.boxplot(x=self._nodule_data["diagnosis"], y=self._nodule_data["diameter"])
         axes.set_title("Nodule Diameter by Diagnosis")
         plt.show()
 

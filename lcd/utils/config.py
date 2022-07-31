@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Friday July 29th 2022 12:41:04 am                                                   #
-# Modified   : Sunday July 31st 2022 12:56:51 am                                                   #
+# Modified   : Sunday July 31st 2022 11:57:30 am                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -43,6 +43,14 @@ class DataConfig:
     @property
     def lidc_folder(self) -> str:
         return self._parser["folders"]["lidc"]
+
+    @property
+    def include_small_nodules(self) -> bool:
+        return self._parser.getboolean("options", "include_small_nodules")
+
+    @property
+    def include_non_nodules(self) -> bool:
+        return self._parser.getboolean("options", "include_non_nodules")
 
 
 class PylidcConfig:

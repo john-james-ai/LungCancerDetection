@@ -10,8 +10,100 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Tuesday July 26th 2022 03:34:05 pm                                                  #
-# Modified   : Tuesday July 26th 2022 03:34:09 pm                                                  #
+# Modified   : Sunday July 31st 2022 03:47:17 am                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
 # ================================================================================================ #
+
+ANNOTATION_COLUMNS = [
+    "patient_id",
+    "scan_id",
+    "nodule_classification",
+    "nodule_id",
+    "annotation_no",
+    "annotation_id",
+    "n_readers",
+    "subtlety",
+    "internalStructure",
+    "calcification",
+    "sphericity",
+    "margin",
+    "lobulation",
+    "spiculation",
+    "texture",
+    "malignancy",
+    "Subtlety",
+    "InternalStructure",
+    "Calcification",
+    "Sphericity",
+    "Margin",
+    "Lobulation",
+    "Spiculation",
+    "Texture",
+    "Malignancy",
+    "diameter",
+    "volume",
+    "surface_area",
+    "diagnosis",
+    "slice_thickness",
+    "slice_spacing",
+    "pixel_spacing",
+]
+
+NODULE_COLUMNS = [
+    "patient_id",
+    "scan_id",
+    "nodule_classification",
+    "nodule_id",
+    "annotation_no",
+    "annotation_id",
+    "n_readers",
+    "subtlety",
+    "internalStructure",
+    "calcification",
+    "sphericity",
+    "margin",
+    "lobulation",
+    "spiculation",
+    "texture",
+    "malignancy",
+    "Subtlety",
+    "InternalStructure",
+    "Calcification",
+    "Sphericity",
+    "Margin",
+    "Lobulation",
+    "Spiculation",
+    "Texture",
+    "Malignancy",
+    "diameter",
+    "volume",
+    "surface_area",
+    "diagnosis",
+]
+
+
+FEATURE_COLUMNS = [
+    "subtlety",
+    "internalStructure",
+    "calcification",
+    "sphericity",
+    "margin",
+    "lobulation",
+    "spiculation",
+    "texture",
+    "malignancy",
+]
+
+SEMANTIC_FEATURE_COLUMNS = [
+    "Subtlety",
+    "InternalStructure",
+    "Calcification",
+    "Sphericity",
+    "Margin",
+    "Lobulation",
+    "Spiculation",
+    "Texture",
+    "Malignancy",
+]

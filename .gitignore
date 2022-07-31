@@ -12,6 +12,9 @@ data/
 # Lab
 lab/
 
+# Notes
+notes/
+
 # Distribution / packaging
 .Python
 build/
