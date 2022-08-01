@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Friday July 29th 2022 01:01:20 am                                                   #
-# Modified   : Friday July 29th 2022 02:47:20 am                                                   #
+# Modified   : Sunday July 31st 2022 09:37:37 pm                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -22,9 +22,10 @@ import logging.config
 
 # Enter imports for modules and classes being tested here
 from lcd.utils.config import DataConfig, PylidcConfig
+from lcd.utils.log_config import LOG_CONFIG
 
 # ------------------------------------------------------------------------------------------------ #
-logging.config.fileConfig(fname="config/log.conf")
+logging.config.dictConfig(LOG_CONFIG)
 logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------ #
 
@@ -37,16 +38,34 @@ logger = logging.getLogger(__name__)
 class TestConfig:
     def test_data_config(self, caplog):
         logger.info("\tStarted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
-        raw = "./data/0_raw/LIDC-IDRI"
-        metadata = "./data/1_meta"
-        images = "./data/2_final/images"
-        masks = "./data/2_final/masks"
+        external = "./data/0_external"
+        raw = "./data/1_raw"
+        raw_lidc = "./data/1_raw/LIDC-IDRI"
+        interim = "./data/2_interim"
+        final = "./data/3_final"
+
+        final_images = "./data/2_final/images"
+        final_masks = "./data/2_final/masks"
+
+        non_nodule_cases = "./data/0_external/non_nodule_cases.csv"
+
+        include_small_nodules = False
+        include_non_nodules = False
 
         config = DataConfig()
+        assert external == config.external_data_folder
         assert raw == config.raw_data_folder
-        assert metadata == config.metadata_folder
-        assert images == config.image_folder
-        assert masks == config.mask_folder
+        assert raw_lidc == config.raw_lidc_data_folder
+        assert interim == config.interim_data_folder
+        assert final == config.final_data_folder
+
+        assert final_images == config.final_images_folder
+        assert final_masks == config.final_masks_folder
+
+        assert non_nodule_cases == config.non_nodule_cases
+
+        assert include_small_nodules == config.include_small_nodules
+        assert include_non_nodules == config.include_non_nodules
 
         logger.info("\tCompleted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
 

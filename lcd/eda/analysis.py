@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Wednesday July 27th 2022 03:49:40 pm                                                #
-# Modified   : Sunday July 31st 2022 11:03:38 am                                                   #
+# Modified   : Sunday July 31st 2022 08:47:37 pm                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -24,9 +24,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from lcd.utils.config import DataConfig
+from lcd.utils.log_config import LOG_CONFIG
 
 # ------------------------------------------------------------------------------------------------ #
-logging.config.fileConfig(fname="config/log.conf")
+logging.config.dictConfig(LOG_CONFIG)
 logger = logging.getLogger(__name__)
 sns.set_palette("Blues_d")
 sns.set_style("whitegrid")

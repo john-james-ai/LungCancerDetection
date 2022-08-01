@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Tuesday July 26th 2022 03:34:05 pm                                                  #
-# Modified   : Sunday July 31st 2022 03:47:17 am                                                   #
+# Modified   : Sunday July 31st 2022 09:03:52 pm                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -80,6 +80,14 @@ NODULE_COLUMNS = [
     "diameter",
     "volume",
     "surface_area",
+    "diagnosis",
+]
+
+SMALL_NODULE_COLUMNS = [
+    "patient_id",
+    "scan_id",
+    "nodule_classification",
+    "nodule_id",
     "diagnosis",
 ]
 
