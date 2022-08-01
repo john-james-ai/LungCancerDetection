@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Wednesday July 27th 2022 03:49:40 pm                                                #
-# Modified   : Sunday July 31st 2022 03:06:40 pm                                                   #
+# Modified   : Sunday July 31st 2022 09:38:28 pm                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -28,7 +28,7 @@ from typing import Tuple
 
 
 from lcd.utils.config import DataConfig
-from lcd.eda import ANNOTATION_COLUMNS, NODULE_COLUMNS, FEATURE_COLUMNS
+from lcd.eda import ANNOTATION_COLUMNS, NODULE_COLUMNS, FEATURE_COLUMNS, SMALL_NODULE_COLUMNS
 from lcd.utils.log_config import LOG_CONFIG
 
 # ------------------------------------------------------------------------------------------------ #
@@ -64,16 +64,19 @@ class LIDCData:
         # Filepaths
         self._annotation_filepath = os.path.join(DataConfig().raw_data_folder, "annotations.csv")
         self._nodule_filepath = os.path.join(DataConfig().raw_data_folder, "nodules.csv")
-        self._non_nodule_cases_filepath = os.path.join(
-            DataConfig().raw_data_folder, "non_nodules.csv"
+
+        self._non_nodule_filepath = os.path.join(DataConfig().raw_data_folder, "non_nodules.csv")
+        self._small_nodule_filepath = os.path.join(
+            DataConfig().raw_data_folder, "small_nodules.csv"
         )
 
         # Datasets
         self._annotation_data = pd.DataFrame(index=[], columns=ANNOTATION_COLUMNS)
         self._nodule_data = pd.DataFrame(index=[], columns=NODULE_COLUMNS)
-        self._non_nodule_cases = list(
-            pd.read_csv(self._non_nodule_cases_filepath)["patient_id"].values
-        )
+        self._non_nodule_data = pd.DataFrame(index=[], columns=NODULE_COLUMNS)
+        self._small_nodule_data = pd.DataFrame(index=[], columns=SMALL_NODULE_COLUMNS)
+
+        self._non_nodule_cases = list(pd.read_csv(self._non_nodule_filepath)["patient_id"].values)
 
     def build(self) -> None:
         """Builds the scan metadata to the annotation level."""
