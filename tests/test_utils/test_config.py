@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Friday July 29th 2022 01:01:20 am                                                   #
-# Modified   : Sunday July 31st 2022 09:37:37 pm                                                   #
+# Modified   : Sunday July 31st 2022 11:32:32 pm                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -47,10 +47,13 @@ class TestConfig:
         final_images = "./data/2_final/images"
         final_masks = "./data/2_final/masks"
 
+        metadata = "./data/0_external/metadata.csv"
         non_nodule_cases = "./data/0_external/non_nodule_cases.csv"
-
-        include_small_nodules = False
-        include_non_nodules = False
+        cases = "./data/4_metadata/cases.csv"
+        annotations = "./data/4_metadata/annotations.csv"
+        nodules = "./data/4_metadata/nodules.csv"
+        small_nodules = "./data/4_metadata/small_nodules.csv"
+        non_nodules = "./data/4_metadata/non_nodules.csv"
 
         config = DataConfig()
         assert external == config.external_data_folder
@@ -63,9 +66,13 @@ class TestConfig:
         assert final_masks == config.final_masks_folder
 
         assert non_nodule_cases == config.non_nodule_cases
+        assert metadata == config.metadata_filepath
 
-        assert include_small_nodules == config.include_small_nodules
-        assert include_non_nodules == config.include_non_nodules
+        assert cases == config.cases_filepath
+        assert annotations == config.annotations_filepath
+        assert nodules == config.nodules_filepath
+        assert small_nodules == config.small_nodules_filepath
+        assert non_nodules == config.non_nodules_filepath
 
         logger.info("\tCompleted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
 

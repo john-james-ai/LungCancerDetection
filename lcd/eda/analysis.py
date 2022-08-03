@@ -10,12 +10,11 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Wednesday July 27th 2022 03:49:40 pm                                                #
-# Modified   : Sunday July 31st 2022 08:47:37 pm                                                   #
+# Modified   : Monday August 1st 2022 03:56:10 am                                                  #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
 # ================================================================================================ #
-import os
 import pandas as pd
 import numpy as np
 import logging
@@ -39,8 +38,8 @@ class LIDCExplorer:
 
     def __init__(self) -> None:
 
-        self._annotation_filepath = os.path.join(DataConfig().raw_data_folder, "annotations.csv")
-        self._nodule_filepath = os.path.join(DataConfig().raw_data_folder, "nodules.csv")
+        self._annotation_filepath = DataConfig().annotations_filepath
+        self._nodule_filepath = DataConfig().nodules_filepath
 
         self._annotation_data = None
         self._nodule_data = None

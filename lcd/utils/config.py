@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Friday July 29th 2022 12:41:04 am                                                   #
-# Modified   : Sunday July 31st 2022 09:37:18 pm                                                   #
+# Modified   : Sunday July 31st 2022 11:32:13 pm                                                   #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -59,19 +59,35 @@ class DataConfig:
 
     # Files
     @property
-    def non_nodule_cases(self) -> str:
-        return self._parser["files"]["non_nodule_cases"]
-
-    # Options
-    @property
-    def include_small_nodules(self) -> bool:
-        return self._parser.getboolean("options", "include_small_nodules")
+    def metadata_filepath(self) -> str:
+        return self._parser["filepaths"]["metadata"]
 
     @property
-    def include_non_nodules(self) -> bool:
-        return self._parser.getboolean("options", "include_non_nodules")
+    def non_nodule_cases_filepath(self) -> str:
+        return self._parser["filepaths"]["non_nodule_cases"]
+
+    @property
+    def cases_filepath(self) -> str:
+        return self._parser["filepaths"]["cases"]
+
+    @property
+    def annotations_filepath(self) -> str:
+        return self._parser["filepaths"]["annotations"]
+
+    @property
+    def nodules_filepath(self) -> str:
+        return self._parser["filepaths"]["nodules"]
+
+    @property
+    def small_nodules_filepath(self) -> str:
+        return self._parser["filepaths"]["small_nodules"]
+
+    @property
+    def non_nodules_filepath(self) -> str:
+        return self._parser["filepaths"]["non_nodules"]
 
 
+# ------------------------------------------------------------------------------------------------ #
 class PylidcConfig:
     def __init__(self, config_filepath=PYLIDC_CONFIG):
         self._config_filepath = config_filepath

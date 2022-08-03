@@ -10,7 +10,7 @@
 # URL        : https://github.com/john-james-ai/LungCancerDetection                                #
 # ------------------------------------------------------------------------------------------------ #
 # Created    : Wednesday July 27th 2022 03:49:40 pm                                                #
-# Modified   : Sunday July 31st 2022 09:38:28 pm                                                   #
+# Modified   : Monday August 1st 2022 03:34:40 am                                                  #
 # ------------------------------------------------------------------------------------------------ #
 # License    : BSD 3-clause "New" or "Revised" License                                             #
 # Copyright  : (c) 2022 John James                                                                 #
@@ -28,7 +28,13 @@ from typing import Tuple
 
 
 from lcd.utils.config import DataConfig
-from lcd.eda import ANNOTATION_COLUMNS, NODULE_COLUMNS, FEATURE_COLUMNS, SMALL_NODULE_COLUMNS
+from lcd.eda import (
+    ANNOTATION_COLUMNS,
+    NODULE_COLUMNS,
+    FEATURE_COLUMNS,
+    SMALL_NODULE_COLUMNS,
+    CASE_COLUMNS,
+)
 from lcd.utils.log_config import LOG_CONFIG
 
 # ------------------------------------------------------------------------------------------------ #
@@ -57,65 +63,86 @@ class LIDCData:
         self._excluded_patients = excluded_patients
         self._use_existing_data = use_existing_data
 
-        # Options
-        self._include_small_nodules = DataConfig().include_small_nodules
-        self._include_non_nodules = DataConfig().include_non_nodules
+        # Input: Reference data including non-nodule cases and metadata
+        self._non_nodule_cases = None
+        self._non_nodule_cases_filepath = DataConfig().non_nodule_cases_filepath
+        self._metadata = None
+        self._metadata_filepath = DataConfig().metadata_filepath
 
-        # Filepaths
-        self._annotation_filepath = os.path.join(DataConfig().raw_data_folder, "annotations.csv")
-        self._nodule_filepath = os.path.join(DataConfig().raw_data_folder, "nodules.csv")
+        # Output: Filepaths
+        self._cases_filepath = DataConfig().cases_filepath
+        self._annotations_filepath = DataConfig().annotations_filepath
+        self._nodules_filepath = DataConfig().nodules_filepath
+        self._small_nodules_filepath = DataConfig().small_nodules_filepath
+        self._non_nodules_filepath = DataConfig().non_nodules_filepath
 
-        self._non_nodule_filepath = os.path.join(DataConfig().raw_data_folder, "non_nodules.csv")
-        self._small_nodule_filepath = os.path.join(
-            DataConfig().raw_data_folder, "small_nodules.csv"
-        )
-
-        # Datasets
+        # Output: Datasets
+        self._case_data = pd.DataFrame(index=[], columns=CASE_COLUMNS)
         self._annotation_data = pd.DataFrame(index=[], columns=ANNOTATION_COLUMNS)
         self._nodule_data = pd.DataFrame(index=[], columns=NODULE_COLUMNS)
         self._non_nodule_data = pd.DataFrame(index=[], columns=NODULE_COLUMNS)
         self._small_nodule_data = pd.DataFrame(index=[], columns=SMALL_NODULE_COLUMNS)
 
-        self._non_nodule_cases = list(pd.read_csv(self._non_nodule_filepath)["patient_id"].values)
-
     def build(self) -> None:
         """Builds the scan metadata to the annotation level."""
         logger.debug("\tStarted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
 
-        self._build_annotation_data()
-        self._build_nodule_data()
+        if self._use_existing_data and self._data_exists:
+            self._load_existing_data()
+
+        else:
+            self._load_reference_data()
+            self._build_annotation_data()
+            self._build_nodule_data()
+            # self._build_case_data()
+            self._save_data()
 
         logger.debug("\tCompleted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
+
+    def _data_exists(self) -> bool:
+        return (
+            os.path.exists(self._annotations_filepath)
+            and os.path.exists(self._nodules_filepath)
+            and os.path.exists(self._small_nodules_filepath)
+            and os.path.exists(self._non_nodules_filepath)
+        )
+
+    def _load_existing_data(self) -> None:
+        logger.info("Loading existing data...")
+        # self._case_data = pd.read_csv(self._cases_filepath)
+        self._annotation_data = pd.read_csv(self._annotations_filepath)
+        self._nodule_data = pd.read_csv(self._nodules_filepath)
+        self._small_nodule_data = pd.read_csv(self._small_nodules_filepath)
+        self._non_nodule_data = pd.read_csv(self._non_nodules_filepath)
+
+    def _load_reference_data(self) -> None:
+        """Loads cases with non or small nodules."""
+        self._non_nodule_cases = list(
+            pd.read_csv(self._non_nodule_cases_filepath)["patient_id"].values
+        )
+        self._metadata = pd.read_csv(self._metadata_filepath)
 
     def _build_annotation_data(self) -> None:
         """Builds the annotation data."""
 
         logger.debug("\tStarted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
 
-        if self._use_existing_data and self._exists(self._annotation_filepath):
-            self._annotation_data = self._read(self._annotation_filepath)
-            logger.debug("Loading existing annotation data.")
+        scans = self._get_scans()
+        with tqdm(total=scans.count()) as pbar:
+            # Process clustered annotations by scan
+            for scan in scans:
 
-        else:
+                pbar.set_description("Processing patient {}".format(scan.patient_id))
+                logger.debug("Processing patient {}".format(scan.patient_id))
 
-            scans = self._get_scans()
-            with tqdm(total=scans.count()) as pbar:
-                # Process clustered annotations by scan
-                for scan in scans:
+                nodules = scan.cluster_annotations(verbose=False)
 
-                    pbar.set_description("Processing patient {}".format(scan.patient_id))
-                    logger.debug("Processing patient {}".format(scan.patient_id))
+                if len(nodules) == 0:
+                    self._create_small_nodule_annotation(scan)
+                else:
+                    self._create_nodule_annotations(scan, nodules)
 
-                    nodules = scan.cluster_annotations(verbose=False)
-
-                    if len(nodules) == 0 and self._include_small_nodules:
-                        self._create_small_nodule_annotation(scan)
-                    else:
-                        self._create_nodule_annotations(scan, nodules)
-
-                    pbar.update(1)
-
-            self._write(self._annotation_data, self._annotation_filepath)
+                pbar.update(1)
 
         logger.debug("\tCompleted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
 
@@ -130,37 +157,14 @@ class LIDCData:
         df["scan_id"] = [scan.id]
         df["nodule_classification"] = ["small nodule"]
         df["nodule_id"] = [scan.patient_id + "-" + str(0)]
-        df["annotation_no"] = [0]
-        df["annotation_id"] = [0]
-        df["n_readers"] = [0]
-        df["subtlety"] = [0]
-        df["internalStructure"] = [0]
-        df["calcification"] = [0]
-        df["sphericity"] = [0]
-        df["margin"] = [0]
-        df["lobulation"] = [0]
-        df["spiculation"] = [0]
-        df["texture"] = [0]
         df["malignancy"] = [1]
-        df["diameter"] = [0]
-        df["volume"] = [0]
-        df["surface_area"] = [0]
-        df["diagnosis"] = ["Benign"]
-        df["slice_thickness"] = [0]
-        df["slice_spacing"] = [0]
-        df["pixel_spacing"] = [0]
-
-        df["Subtlety"] = ["NA"]
-        df["InternalStructure"] = ["NA"]
-        df["Calcification"] = ["NA"]
-        df["Sphericity"] = ["NA"]
-        df["Margin"] = ["NA"]
-        df["Lobulation"] = ["NA"]
-        df["Spiculation"] = ["NA"]
-        df["Texture"] = ["NA"]
         df["Malignancy"] = [str(1) + "-" + features.Malignancy(1)]
+        df["diameter"] = ["<3mm"]
+        df["diagnosis"] = ["Benign"]
 
-        self._annotation_data = pd.concat([self._annotation_data, df], axis=0, ignore_index=True)
+        self._small_nodule_data = pd.concat(
+            [self._small_nodule_data, df], axis=0, ignore_index=True
+        )
 
         logger.debug("\tCompleted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
 
@@ -178,73 +182,59 @@ class LIDCData:
 
                 classification, diagnosis = self._get_nodule_designation(annotation)
 
-                if (
-                    classification == "non_nodule" and self._include_non_nodules
-                ) or classification == "nodule":
+                df = pd.DataFrame(columns=ANNOTATION_COLUMNS)
+                df["patient_id"] = [scan.patient_id]
+                df["scan_id"] = [scan.id]
+                df["nodule_classification"] = [classification]
+                df["nodule_id"] = [nodule_id]
+                df["annotation_no"] = [annotation_no]
+                df["annotation_id"] = [annotation.id]
+                df["n_readers"] = [len(nodule)]
+                df["diameter"] = [annotation.diameter]
+                df["volume"] = [annotation.volume]
+                df["surface_area"] = [annotation.surface_area]
+                df["diagnosis"] = [diagnosis]
+                df["slice_thickness"] = [annotation.scan.slice_thickness]
+                df["slice_spacing"] = [annotation.scan.slice_spacing]
+                df["pixel_spacing"] = [annotation.scan.pixel_spacing]
 
-                    df = pd.DataFrame(columns=ANNOTATION_COLUMNS)
-                    df["patient_id"] = [scan.patient_id]
-                    df["scan_id"] = [scan.id]
-                    df["nodule_classification"] = [classification]
-                    df["nodule_id"] = [nodule_id]
-                    df["annotation_no"] = [annotation_no]
-                    df["annotation_id"] = [annotation.id]
-                    df["n_readers"] = [len(nodule)]
-                    df["diameter"] = [annotation.diameter]
-                    df["volume"] = [annotation.volume]
-                    df["surface_area"] = [annotation.surface_area]
-                    df["diagnosis"] = [diagnosis]
-                    df["slice_thickness"] = [annotation.scan.slice_thickness]
-                    df["slice_spacing"] = [annotation.scan.slice_spacing]
-                    df["pixel_spacing"] = [annotation.scan.pixel_spacing]
+                df["Subtlety"] = [
+                    str(annotation.subtlety) + "-" + features.Subtlety(annotation.subtlety)
+                ]
 
-                    df["Subtlety"] = [
-                        str(annotation.subtlety) + "-" + features.Subtlety(annotation.subtlety)
-                    ]
+                df["InternalStructure"] = [
+                    str(annotation.internalStructure)
+                    + "-"
+                    + features.InternalStructure(annotation.internalStructure)
+                ]
+                df["Calcification"] = [
+                    str(annotation.calcification)
+                    + "-"
+                    + features.Calcification(annotation.calcification)
+                ]
+                df["Sphericity"] = [
+                    str(annotation.sphericity) + "-" + features.Sphericity(annotation.sphericity)
+                ]
+                df["Margin"] = [str(annotation.margin) + "-" + features.Margin(annotation.margin)]
+                df["Lobulation"] = [
+                    str(annotation.lobulation) + "-" + features.Lobulation(annotation.lobulation)
+                ]
+                df["Spiculation"] = [
+                    str(annotation.spiculation) + "-" + features.Spiculation(annotation.spiculation)
+                ]
+                df["Texture"] = [
+                    str(annotation.texture) + "-" + features.Texture(annotation.texture)
+                ]
+                df["Malignancy"] = [
+                    str(annotation.malignancy) + "-" + features.Malignancy(annotation.malignancy)
+                ]
 
-                    df["InternalStructure"] = [
-                        str(annotation.internalStructure)
-                        + "-"
-                        + features.InternalStructure(annotation.internalStructure)
-                    ]
-                    df["Calcification"] = [
-                        str(annotation.calcification)
-                        + "-"
-                        + features.Calcification(annotation.calcification)
-                    ]
-                    df["Sphericity"] = [
-                        str(annotation.sphericity)
-                        + "-"
-                        + features.Sphericity(annotation.sphericity)
-                    ]
-                    df["Margin"] = [
-                        str(annotation.margin) + "-" + features.Margin(annotation.margin)
-                    ]
-                    df["Lobulation"] = [
-                        str(annotation.lobulation)
-                        + "-"
-                        + features.Lobulation(annotation.lobulation)
-                    ]
-                    df["Spiculation"] = [
-                        str(annotation.spiculation)
-                        + "-"
-                        + features.Spiculation(annotation.spiculation)
-                    ]
-                    df["Texture"] = [
-                        str(annotation.texture) + "-" + features.Texture(annotation.texture)
-                    ]
-                    df["Malignancy"] = [
-                        str(annotation.malignancy)
-                        + "-"
-                        + features.Malignancy(annotation.malignancy)
-                    ]
+                for name, value in zip(FEATURE_COLUMNS, annotation.feature_vals()):
+                    df[name] = [value]
 
-                    for name, value in zip(FEATURE_COLUMNS, annotation.feature_vals()):
-                        df[name] = [value]
-
-                    self._annotation_data = pd.concat(
-                        [self._annotation_data, df], axis=0, ignore_index=True
-                    )
+                self._annotation_data = pd.concat(
+                    [self._annotation_data, df], axis=0, ignore_index=True
+                )
 
         logger.debug("\tCompleted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
 
@@ -263,69 +253,66 @@ class LIDCData:
 
         logger.debug("\tStarted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
 
-        if self._use_existing_data and self._exists(self._nodule_filepath):
-            self._nodule_data = self._read(self._nodule_filepath)
-            logger.debug("Loading existing nodule data.")
-
-        else:
-
-            self._nodule_data = (
-                self._annotation_data.groupby(
-                    ["patient_id", "scan_id", "nodule_classification", "nodule_id"]
-                )
-                .agg(
-                    {
-                        "annotation_no": "count",
-                        "subtlety": lambda x: math.ceil(np.median(x)),
-                        "internalStructure": lambda x: x.value_counts().index[0],
-                        "calcification": lambda x: x.value_counts().index[0],
-                        "sphericity": lambda x: x.value_counts().index[0],
-                        "margin": lambda x: math.ceil(np.median(x)),
-                        "lobulation": lambda x: math.ceil(np.median(x)),
-                        "spiculation": lambda x: math.ceil(np.median(x)),
-                        "texture": lambda x: x.value_counts().index[0],
-                        "malignancy": lambda x: math.ceil(np.median(x)),
-                        "diameter": "mean",
-                        "volume": "mean",
-                        "surface_area": "mean",
-                        "diagnosis": lambda x: x.value_counts().index[0],
-                    }
-                )
-                .rename(columns={"annotation_no": "n_readers"})
-                .reset_index()
-            )
-            features = SemanticFeatures()
-            self._nodule_data["Subtlety"] = [
-                features.Subtlety(x) for x in self._nodule_data["subtlety"]
-            ]
-            self._nodule_data["InternalStructure"] = [
-                features.InternalStructure(x) for x in self._nodule_data["internalStructure"]
-            ]
-
-            self._nodule_data["Calcification"] = [
-                features.Calcification(x) for x in self._nodule_data["calcification"]
-            ]
-
-            self._nodule_data["Sphericity"] = [
-                features.Sphericity(x) for x in self._nodule_data["sphericity"]
-            ]
-            self._nodule_data["Margin"] = [features.Margin(x) for x in self._nodule_data["margin"]]
-            self._nodule_data["Lobulation"] = [
-                features.Lobulation(x) for x in self._nodule_data["lobulation"]
-            ]
-            self._nodule_data["Spiculation"] = [
-                features.Spiculation(x) for x in self._nodule_data["spiculation"]
-            ]
-            self._nodule_data["Texture"] = [
-                features.Texture(x) for x in self._nodule_data["texture"]
-            ]
-            self._nodule_data["Malignancy"] = [
-                features.Malignancy(x) for x in self._nodule_data["malignancy"]
-            ]
-
-            self._write(self._nodule_data, self._nodule_filepath)
+        self._nodule_data = self._extract_nodule_data(
+            self._annotation_data[self._annotation_data["nodule_classification"] == "nodule"]
+        )
+        self._non_nodule_data = self._extract_nodule_data(
+            self._annotation_data[self._annotation_data["nodule_classification"] == "non_nodule"]
+        )
 
         logger.debug("\tCompleted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
+
+    def _extract_nodule_data(self, annotation_data: pd.DataFrame) -> pd.DataFrame:
+        """Extracts and aggregates nodule and non-nodule data from the annotation data frame."""
+
+        logger.debug("\tStarted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
+
+        nodule_data = (
+            annotation_data.groupby(["patient_id", "scan_id", "nodule_id", "nodule_classification"])
+            .agg(
+                {
+                    "annotation_no": "count",
+                    "subtlety": lambda x: math.ceil(np.median(x)),
+                    "internalStructure": lambda x: x.value_counts().index[0],
+                    "calcification": lambda x: x.value_counts().index[0],
+                    "sphericity": lambda x: x.value_counts().index[0],
+                    "margin": lambda x: math.ceil(np.median(x)),
+                    "lobulation": lambda x: math.ceil(np.median(x)),
+                    "spiculation": lambda x: math.ceil(np.median(x)),
+                    "texture": lambda x: x.value_counts().index[0],
+                    "malignancy": lambda x: math.ceil(np.median(x)),
+                    "diameter": "mean",
+                    "volume": "mean",
+                    "surface_area": "mean",
+                    "diagnosis": lambda x: x.value_counts().index[0],
+                }
+            )
+            .rename(columns={"annotation_no": "n_readers"})
+            .reset_index()
+        )
+        features = SemanticFeatures()
+        nodule_data["Subtlety"] = [features.Subtlety(x) for x in nodule_data["subtlety"]]
+        nodule_data["InternalStructure"] = [
+            features.InternalStructure(x) for x in nodule_data["internalStructure"]
+        ]
+
+        nodule_data["Calcification"] = [
+            features.Calcification(x) for x in nodule_data["calcification"]
+        ]
+
+        nodule_data["Sphericity"] = [features.Sphericity(x) for x in nodule_data["sphericity"]]
+        nodule_data["Margin"] = [features.Margin(x) for x in nodule_data["margin"]]
+        nodule_data["Lobulation"] = [features.Lobulation(x) for x in nodule_data["lobulation"]]
+        nodule_data["Spiculation"] = [features.Spiculation(x) for x in nodule_data["spiculation"]]
+        nodule_data["Texture"] = [features.Texture(x) for x in nodule_data["texture"]]
+        nodule_data["Malignancy"] = [features.Malignancy(x) for x in nodule_data["malignancy"]]
+
+        logger.debug("\tCompleted {} {}".format(self.__class__.__name__, inspect.stack()[0][3]))
+
+        return nodule_data
+
+    def _build_case_data(self) -> None:
+        pass
 
     def _get_scans(self) -> list:
         if len(self._included_patients) > 0 and len(self._excluded_patients) > 0:
@@ -340,6 +327,13 @@ class LIDCData:
         else:
             scans = pl.query(pl.Scan)
         return scans
+
+    def _save_data(self) -> None:
+        # self._write(self._case_data, self._cases_filepath)
+        self._write(self._annotation_data, self._annotations_filepath)
+        self._write(self._nodule_data, self._nodules_filepath)
+        self._write(self._small_nodule_data, self._small_nodules_filepath)
+        self._write(self._non_nodule_data, self._non_nodules_filepath)
 
     def _read(self, filepath: str) -> pd.DataFrame:
         """Loads existing metadata if it exists."""
